@@ -92,7 +92,7 @@ def generate_frames():
 @app.route('/')
 def index():
     """Render the main page"""
-    return render_template('index.html')
+    return render_template('index-2.html')
 
 @app.route('/start_camera', methods=['POST'])
 def start_camera():
