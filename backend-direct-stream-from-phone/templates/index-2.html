@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Object Detection - Phone Camera</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .control-panel {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .mode-btn {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px 20px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            color: #667eea;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .mode-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        input[type="text"] {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-start:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-stop {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-stop:hover:not(:disabled) {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        }
+        
+        .btn-stop:disabled, .btn-start:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .video-container {
+            text-align: center;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        #videoFeed, #phoneCamera, #processedCanvas {
+            max-width: 100%;
+            height: auto;
+            display: none;
+        }
+        
+        .placeholder {
+            color: #888;
+            font-size: 1.2em;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .status {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .status.running {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.stopped {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            border: 2px solid #333;
+        }
+        
+        .legend-color.checker {
+            background: #00ff00;
+        }
+        
+        .legend-color.dice {
+            background: #0000ff;
+        }
+        
+        .camera-select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            margin-bottom: 15px;
+            background: white;
+        }
+        
+        #webcamMode, #phoneMode {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .mode-selector, .input-group {
+                flex-direction: column;
+            }
+            
+            input[type="text"], .mode-btn {
+                min-width: 100%;
+            }
+            
+            .legend {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Object Detection Camera</h1>
+            <p class="subtitle">Real-time Checker & Dice Detection</p>
+        </header>
+        
+        <div class="content">
+            <div class="control-panel">
+                <div class="mode-selector">
+                    <button class="mode-btn active" onclick="switchMode('phone')">📱 Phone Camera (Direct)</button>
+                    <button class="mode-btn" onclick="switchMode('webcam')">💻 Webcam/IP Camera</button>
+                </div>
+                
+                <!-- Phone Camera Mode -->
+                <div id="phoneMode" style="display: block;">
+                    <select id="cameraSelect" class="camera-select">
+                        <option value="">Select Camera...</option>
+                    </select>
+                    <div class="input-group">
+                        <button class="btn-start" id="startPhoneBtn" onclick="startPhoneCamera()">Start Phone Camera</button>
+                        <button class="btn-stop" id="stopPhoneBtn" onclick="stopPhoneCamera()" disabled>Stop Camera</button>
+                    </div>
+                </div>
+                
+                <!-- Webcam Mode -->
+                <div id="webcamMode">
+                    <div class="input-group">
+                        <input type="text" id="cameraSource" placeholder="Enter camera source (0, 1, URL, etc.)" value="0">
+                        <button class="btn-start" id="startBtn" onclick="startCamera()">Start Camera</button>
+                        <button class="btn-stop" id="stopBtn" onclick="stopCamera()" disabled>Stop Camera</button>
+                    </div>
+                </div>
+                
+                <div id="status" class="status stopped">
+                    ⚫ Camera is stopped
+                </div>
+            </div>
+            
+            <div class="video-container">
+                <video id="phoneCamera" autoplay playsinline></video>
+                <canvas id="processedCanvas"></canvas>
+                <img id="videoFeed" src="" alt="Video Feed">
+                <div id="placeholder" class="placeholder">
+                    📷 Select "Phone Camera" mode and click "Start Phone Camera" to begin
+                </div>
+            </div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color checker"></div>
+                    <span><strong>Green Circle</strong> = Checker</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color dice"></div>
+                    <span><strong>Red Rectangle</strong> = Dice</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentMode = 'phone';
+        let stream = null;
+        let processingInterval = null;
+        
+        // Switch between phone and webcam modes
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Update button styles
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Show/hide appropriate controls
+            if (mode === 'phone') {
+                document.getElementById('phoneMode').style.display = 'block';
+                document.getElementById('webcamMode').style.display = 'none';
+                stopCamera();
+            } else {
+                document.getElementById('phoneMode').style.display = 'none';
+                document.getElementById('webcamMode').style.display = 'block';
+                stopPhoneCamera();
+            }
+            
+            updateStatus(false);
+        }
+        
+        // Get available cameras
+        async function getCameras() {
+            try {
+                // First request permission to access camera
+                const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                tempStream.getTracks().forEach(track => track.stop());
+                
+                // Now get the full list with labels
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                const select = document.getElementById('cameraSelect');
+                select.innerHTML = '';
+                
+                if (videoDevices.length === 0) {
+                    select.innerHTML = '<option value="">No cameras found</option>';
+                    return;
+                }
+                
+                videoDevices.forEach((device, index) => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `Camera ${index + 1}`;
+                    select.appendChild(option);
+                });
+                
+                // Auto-select back camera on mobile
+                const backCamera = videoDevices.find(device => 
+                    device.label.toLowerCase().includes('back') || 
+                    device.label.toLowerCase().includes('rear') ||
+                    device.label.toLowerCase().includes('environment')
+                );
+                if (backCamera) {
+                    select.value = backCamera.deviceId;
+                } else if (videoDevices.length > 0) {
+                    // If no back camera found, select the first one
+                    select.value = videoDevices[0].deviceId;
+                }
+            } catch (error) {
+                console.error('Error getting cameras:', error);
+                const select = document.getElementById('cameraSelect');
+                select.innerHTML = '<option value="">Camera permission denied</option>';
+                alert('Please allow camera access to see available cameras');
+            }
+        }
+        
+        // Start phone camera
+        async function startPhoneCamera() {
+            const select = document.getElementById('cameraSelect');
+            const deviceId = select.value;
+            
+            if (!deviceId) {
+                alert('Please select a camera first');
+                return;
+            }
+            
+            try {
+                const constraints = {
+                    video: {
+                        deviceId: { exact: deviceId },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+                
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                const video = document.getElementById('phoneCamera');
+                const canvas = document.getElementById('processedCanvas');
+                
+                video.srcObject = stream;
+                video.style.display = 'block';
+                canvas.style.display = 'block';
+                document.getElementById('placeholder').style.display = 'none';
+                
+                document.getElementById('startPhoneBtn').disabled = true;
+                document.getElementById('stopPhoneBtn').disabled = false;
+                
+                updateStatus(true, 'Phone Camera');
+                
+                // Start processing frames
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    processFrames();
+                };
+                
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                alert('Error accessing camera: ' + error.message);
+            }
+        }
+        
+        // Stop phone camera
+        function stopPhoneCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            if (processingInterval) {
+                clearInterval(processingInterval);
+                processingInterval = null;
+            }
+            
+            document.getElementById('phoneCamera').style.display = 'none';
+            document.getElementById('processedCanvas').style.display = 'none';
+            document.getElementById('placeholder').style.display = 'block';
+            document.getElementById('placeholder').innerHTML = '📷 Select "Phone Camera" mode and click "Start Phone Camera" to begin';
+            
+            document.getElementById('startPhoneBtn').disabled = false;
+            document.getElementById('stopPhoneBtn').disabled = true;
+            
+            updateStatus(false);
+        }
+        
+        // Process video frames and send to server
+        function processFrames() {
+            const video = document.getElementById('phoneCamera');
+            const canvas = document.getElementById('processedCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            processingInterval = setInterval(async () => {
+                if (!stream) return;
+                
+                // Draw current frame to canvas
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Convert canvas to blob
+                canvas.toBlob(async (blob) => {
+                    try {
+                        const formData = new FormData();
+                        formData.append('frame', blob, 'frame.jpg');
+                        
+                        const response = await fetch('/process_frame', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (response.ok) {
+                            const resultBlob = await response.blob();
+                            const img = await createImageBitmap(resultBlob);
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        }
+                    } catch (error) {
+                        console.error('Error processing frame:', error);
+                    }
+                }, 'image/jpeg', 0.8);
+                
+            }, 100); // Process at ~10 FPS
+        }
+        
+        // Webcam mode functions (existing)
+        function startCamera() {
+            const source = document.getElementById('cameraSource').value.trim();
+            if (!source) {
+                alert('Please enter a camera source');
+                return;
+            }
+            
+            fetch('/start_camera', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ source: source })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('videoFeed').style.display = 'block';
+                    document.getElementById('placeholder').style.display = 'none';
+                    document.getElementById('videoFeed').src = '/video_feed?' + new Date().getTime();
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('stopBtn').disabled = false;
+                    updateStatus(true, source);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error starting camera: ' + error);
+            });
+        }
+        
+        function stopCamera() {
+            fetch('/stop_camera', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('videoFeed').style.display = 'none';
+                    document.getElementById('videoFeed').src = '';
+                    document.getElementById('placeholder').style.display = 'block';
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('stopBtn').disabled = true;
+                    updateStatus(false);
+                }
+            })
+            .catch(error => {
+                alert('Error stopping camera: ' + error);
+            });
+        }
+        
+        function updateStatus(isRunning, source = null) {
+            const statusDiv = document.getElementById('status');
+            if (isRunning) {
+                statusDiv.className = 'status running';
+                statusDiv.innerHTML = `🟢 Camera is running: <strong>${source}</strong>`;
+            } else {
+                statusDiv.className = 'status stopped';
+                statusDiv.innerHTML = '⚫ Camera is stopped';
+            }
+        }
+        
+        // Initialize cameras on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            getCameras();
+            
+            // Request camera permission to get labels
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    stream.getTracks().forEach(track => track.stop());
+                    getCameras();
+                })
+                .catch(err => console.log('Camera permission denied'));
+        });
+    </script>
+</body>
+</html>
